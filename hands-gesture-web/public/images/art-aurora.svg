@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1026"/>
+      <stop offset="1" stop-color="#123a2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" fill="url(#bg)"/>
+  <path d="M-40 320 Q 140 180 330 300 T 700 260" fill="none" stroke="#00ff88" stroke-width="10" opacity="0.8"/>
+  <path d="M-40 360 Q 160 230 350 340 T 700 300" fill="none" stroke="#ff6b6b" stroke-width="8" opacity="0.7"/>
+  <path d="M-40 400 Q 180 280 370 380 T 700 340" fill="none" stroke="#6bcbff" stroke-width="6" opacity="0.6"/>
+  <circle cx="520" cy="120" r="46" fill="#ffe66d" opacity="0.9"/>
+  <circle cx="520" cy="120" r="60" fill="#ffe66d" opacity="0.25"/>
+  <text x="320" y="455" font-family="sans-serif" font-size="22" fill="#ffffff" text-anchor="middle" opacity="0.85">Aurora</text>
+</svg>

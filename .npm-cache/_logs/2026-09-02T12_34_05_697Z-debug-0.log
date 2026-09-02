@@ -1,0 +1,345 @@
+0 verbose cli /Users/aogengyuan/.nvm/versions/node/v22.8.0/bin/node /Users/aogengyuan/.nvm/versions/node/v22.8.0/bin/npm
+1 info using npm@10.8.2
+2 info using node@v22.8.0
+3 silly config load:file:/Users/aogengyuan/.nvm/versions/node/v22.8.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/.npmrc
+5 silly config load:file:/Users/aogengyuan/.npmrc
+6 silly config load:file:/Users/aogengyuan/.nvm/versions/node/v22.8.0/etc/npmrc
+7 verbose title npm install @mediapipe/tasks-vision
+8 verbose argv "install" "@mediapipe/tasks-vision"
+9 verbose logfile logs-max:10 dir:/Users/aogengyuan/PycharmProjects/hands_gesture/.npm-cache/_logs/2026-09-02T12_34_05_697Z-
+10 verbose logfile /Users/aogengyuan/PycharmProjects/hands_gesture/.npm-cache/_logs/2026-09-02T12_34_05_697Z-debug-0.log
+11 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+12 silly logfile done cleaning log files
+13 silly idealTree buildDeps
+14 silly fetch manifest @mediapipe/tasks-vision@*
+15 silly packumentCache full:https://registry.npmjs.org/@mediapipe%2ftasks-vision cache-miss
+16 http fetch GET 200 https://registry.npmjs.org/@mediapipe%2ftasks-vision 1007ms (cache revalidated)
+17 silly packumentCache full:https://registry.npmjs.org/@mediapipe%2ftasks-vision set size:1137329 disposed:false
+18 silly placeDep ROOT @mediapipe/tasks-vision@1.0.1 OK for: hands-gesture-web@0.0.0 want: *
+19 warn EBADENGINE Unsupported engine {
+19 warn EBADENGINE   package: '@vitejs/plugin-react@6.1.1',
+19 warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+19 warn EBADENGINE   current: { node: 'v22.8.0', npm: '10.8.2' }
+19 warn EBADENGINE }
+20 warn EBADENGINE Unsupported engine {
+20 warn EBADENGINE   package: 'oxlint@1.81.0',
+20 warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+20 warn EBADENGINE   current: { node: 'v22.8.0', npm: '10.8.2' }
+20 warn EBADENGINE }
+21 warn EBADENGINE Unsupported engine {
+21 warn EBADENGINE   package: 'rolldown@1.2.6',
+21 warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+21 warn EBADENGINE   current: { node: 'v22.8.0', npm: '10.8.2' }
+21 warn EBADENGINE }
+22 warn EBADENGINE Unsupported engine {
+22 warn EBADENGINE   package: 'vite@8.2.2',
+22 warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+22 warn EBADENGINE   current: { node: 'v22.8.0', npm: '10.8.2' }
+22 warn EBADENGINE }
+23 silly reify moves {}
+24 silly audit bulk request {
+24 silly audit   '@oxc-project/types': [ '0.147.0' ],
+24 silly audit   '@oxlint/binding-android-arm-eabi': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-android-arm64': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-darwin-arm64': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-darwin-x64': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-freebsd-x64': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-arm-gnueabihf': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-arm-musleabihf': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-arm64-gnu': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-arm64-musl': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-ppc64-gnu': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-riscv64-gnu': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-riscv64-musl': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-s390x-gnu': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-x64-gnu': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-linux-x64-musl': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-openharmony-arm64': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-win32-arm64-msvc': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-win32-ia32-msvc': [ '1.81.0' ],
+24 silly audit   '@oxlint/binding-win32-x64-msvc': [ '1.81.0' ],
+24 silly audit   '@rolldown/binding-android-arm-eabi': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-android-arm64': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-darwin-arm64': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-darwin-x64': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-freebsd-x64': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-linux-arm-gnueabihf': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-linux-arm64-gnu': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-linux-arm64-musl': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-linux-ppc64-gnu': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-linux-s390x-gnu': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-linux-x64-gnu': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-linux-x64-musl': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-openharmony-arm64': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-win32-arm64-msvc': [ '1.2.6' ],
+24 silly audit   '@rolldown/binding-win32-x64-msvc': [ '1.2.6' ],
+24 silly audit   '@rolldown/pluginutils': [ '1.0.1' ],
+24 silly audit   '@types/node': [ '24.13.3' ],
+24 silly audit   '@types/react': [ '19.2.18' ],
+24 silly audit   '@types/react-dom': [ '19.2.5' ],
+24 silly audit   '@vitejs/plugin-react': [ '6.1.1' ],
+24 silly audit   csstype: [ '3.2.3' ],
+24 silly audit   'detect-libc': [ '2.1.2' ],
+24 silly audit   fdir: [ '6.5.0' ],
+24 silly audit   fsevents: [ '2.3.3' ],
+24 silly audit   lightningcss: [ '1.33.0' ],
+24 silly audit   'lightningcss-android-arm64': [ '1.33.0' ],
+24 silly audit   'lightningcss-darwin-arm64': [ '1.33.0' ],
+24 silly audit   'lightningcss-darwin-x64': [ '1.33.0' ],
+24 silly audit   'lightningcss-freebsd-x64': [ '1.33.0' ],
+24 silly audit   'lightningcss-linux-arm-gnueabihf': [ '1.33.0' ],
+24 silly audit   'lightningcss-linux-arm64-gnu': [ '1.33.0' ],
+24 silly audit   'lightningcss-linux-arm64-musl': [ '1.33.0' ],
+24 silly audit   'lightningcss-linux-x64-gnu': [ '1.33.0' ],
+24 silly audit   'lightningcss-linux-x64-musl': [ '1.33.0' ],
+24 silly audit   'lightningcss-win32-arm64-msvc': [ '1.33.0' ],
+24 silly audit   'lightningcss-win32-x64-msvc': [ '1.33.0' ],
+24 silly audit   nanoid: [ '3.3.18' ],
+24 silly audit   oxlint: [ '1.81.0' ],
+24 silly audit   picocolors: [ '1.1.1' ],
+24 silly audit   picomatch: [ '4.0.7' ],
+24 silly audit   postcss: [ '8.5.26' ],
+24 silly audit   react: [ '19.2.8' ],
+24 silly audit   'react-dom': [ '19.2.8' ],
+24 silly audit   rolldown: [ '1.2.6' ],
+24 silly audit   scheduler: [ '0.27.0' ],
+24 silly audit   'source-map-js': [ '1.2.1' ],
+24 silly audit   tinyglobby: [ '0.2.17' ],
+24 silly audit   typescript: [ '6.0.3' ],
+24 silly audit   'undici-types': [ '7.18.2' ],
+24 silly audit   vite: [ '8.2.2' ],
+24 silly audit   '@mediapipe/tasks-vision': [ '1.0.1' ]
+24 silly audit }
+25 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-win32-x64-msvc
+26 silly reify mark deleted [
+26 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-win32-x64-msvc'
+26 silly reify ]
+27 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-win32-arm64-msvc
+28 silly reify mark deleted [
+28 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-win32-arm64-msvc'
+28 silly reify ]
+29 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-x64-musl
+30 silly reify mark deleted [
+30 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-x64-musl'
+30 silly reify ]
+31 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-x64-gnu
+32 silly reify mark deleted [
+32 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-x64-gnu'
+32 silly reify ]
+33 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-arm64-musl
+34 silly reify mark deleted [
+34 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-arm64-musl'
+34 silly reify ]
+35 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-arm64-gnu
+36 silly reify mark deleted [
+36 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-arm64-gnu'
+36 silly reify ]
+37 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-arm-gnueabihf
+38 silly reify mark deleted [
+38 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-linux-arm-gnueabihf'
+38 silly reify ]
+39 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-freebsd-x64
+40 silly reify mark deleted [
+40 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-freebsd-x64'
+40 silly reify ]
+41 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-darwin-x64
+42 silly reify mark deleted [
+42 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-darwin-x64'
+42 silly reify ]
+43 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-android-arm64
+44 silly reify mark deleted [
+44 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/lightningcss-android-arm64'
+44 silly reify ]
+45 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-win32-x64-msvc
+46 silly reify mark deleted [
+46 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-win32-x64-msvc'
+46 silly reify ]
+47 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-win32-arm64-msvc
+48 silly reify mark deleted [
+48 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-win32-arm64-msvc'
+48 silly reify ]
+49 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-openharmony-arm64
+50 silly reify mark deleted [
+50 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-openharmony-arm64'
+50 silly reify ]
+51 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-x64-musl
+52 silly reify mark deleted [
+52 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-x64-musl'
+52 silly reify ]
+53 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-x64-gnu
+54 silly reify mark deleted [
+54 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-x64-gnu'
+54 silly reify ]
+55 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-s390x-gnu
+56 silly reify mark deleted [
+56 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-s390x-gnu'
+56 silly reify ]
+57 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-ppc64-gnu
+58 silly reify mark deleted [
+58 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-ppc64-gnu'
+58 silly reify ]
+59 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-arm64-musl
+60 silly reify mark deleted [
+60 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-arm64-musl'
+60 silly reify ]
+61 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-arm64-gnu
+62 silly reify mark deleted [
+62 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-arm64-gnu'
+62 silly reify ]
+63 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-arm-gnueabihf
+64 silly reify mark deleted [
+64 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-linux-arm-gnueabihf'
+64 silly reify ]
+65 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-freebsd-x64
+66 silly reify mark deleted [
+66 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-freebsd-x64'
+66 silly reify ]
+67 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-darwin-x64
+68 silly reify mark deleted [
+68 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-darwin-x64'
+68 silly reify ]
+69 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-darwin-arm64
+70 silly reify mark deleted [
+70 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-darwin-arm64'
+70 silly reify ]
+71 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-android-arm64
+72 silly reify mark deleted [
+72 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-android-arm64'
+72 silly reify ]
+73 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-android-arm-eabi
+74 silly reify mark deleted [
+74 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@rolldown/binding-android-arm-eabi'
+74 silly reify ]
+75 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-win32-x64-msvc
+76 silly reify mark deleted [
+76 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-win32-x64-msvc'
+76 silly reify ]
+77 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-win32-ia32-msvc
+78 silly reify mark deleted [
+78 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-win32-ia32-msvc'
+78 silly reify ]
+79 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-win32-arm64-msvc
+80 silly reify mark deleted [
+80 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-win32-arm64-msvc'
+80 silly reify ]
+81 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-openharmony-arm64
+82 silly reify mark deleted [
+82 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-openharmony-arm64'
+82 silly reify ]
+83 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-x64-musl
+84 silly reify mark deleted [
+84 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-x64-musl'
+84 silly reify ]
+85 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-x64-gnu
+86 silly reify mark deleted [
+86 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-x64-gnu'
+86 silly reify ]
+87 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-s390x-gnu
+88 silly reify mark deleted [
+88 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-s390x-gnu'
+88 silly reify ]
+89 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-riscv64-musl
+90 silly reify mark deleted [
+90 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-riscv64-musl'
+90 silly reify ]
+91 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-riscv64-gnu
+92 silly reify mark deleted [
+92 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-riscv64-gnu'
+92 silly reify ]
+93 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-ppc64-gnu
+94 silly reify mark deleted [
+94 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-ppc64-gnu'
+94 silly reify ]
+95 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm64-musl
+96 silly reify mark deleted [
+96 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm64-musl'
+96 silly reify ]
+97 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm64-gnu
+98 silly reify mark deleted [
+98 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm64-gnu'
+98 silly reify ]
+99 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm-musleabihf
+100 silly reify mark deleted [
+100 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm-musleabihf'
+100 silly reify ]
+101 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm-gnueabihf
+102 silly reify mark deleted [
+102 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-linux-arm-gnueabihf'
+102 silly reify ]
+103 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-freebsd-x64
+104 silly reify mark deleted [
+104 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-freebsd-x64'
+104 silly reify ]
+105 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-darwin-x64
+106 silly reify mark deleted [
+106 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-darwin-x64'
+106 silly reify ]
+107 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-darwin-arm64
+108 silly reify mark deleted [
+108 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-darwin-arm64'
+108 silly reify ]
+109 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-android-arm64
+110 silly reify mark deleted [
+110 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-android-arm64'
+110 silly reify ]
+111 verbose reify failed optional dependency /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-android-arm-eabi
+112 silly reify mark deleted [
+112 silly reify   '/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/node_modules/@oxlint/binding-android-arm-eabi'
+112 silly reify ]
+113 silly tarball no local data for @mediapipe/tasks-vision@https://registry.npmjs.org/@mediapipe/tasks-vision/-/tasks-vision-1.0.1.tgz. Extracting by manifest.
+114 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 384ms
+115 silly audit report {}
+116 http fetch GET 200 https://registry.npmjs.org/@mediapipe/tasks-vision/-/tasks-vision-1.0.1.tgz 5620ms (cache miss)
+117 silly ADD node_modules/@mediapipe/tasks-vision
+118 silly ADD
+119 silly ADD
+120 silly ADD
+121 silly ADD
+122 silly ADD
+123 silly ADD
+124 silly ADD
+125 silly ADD
+126 silly ADD
+127 silly ADD
+128 silly ADD node_modules/fsevents
+129 silly ADD
+130 silly ADD
+131 silly ADD
+132 silly ADD
+133 silly ADD
+134 silly ADD
+135 silly ADD
+136 silly ADD
+137 silly ADD
+138 silly ADD
+139 silly ADD
+140 silly ADD
+141 silly ADD
+142 silly ADD
+143 silly ADD
+144 silly ADD
+145 silly ADD
+146 silly ADD
+147 silly ADD
+148 silly ADD
+149 silly ADD
+150 silly ADD
+151 silly ADD
+152 silly ADD
+153 silly ADD
+154 silly ADD
+155 silly ADD
+156 silly ADD
+157 silly ADD
+158 silly ADD
+159 silly ADD
+160 silly ADD
+161 silly ADD
+162 silly ADD
+163 verbose cwd /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web
+164 verbose os Darwin 23.6.0
+165 verbose node v22.8.0
+166 verbose npm  v10.8.2
+167 verbose exit 0
+168 info ok

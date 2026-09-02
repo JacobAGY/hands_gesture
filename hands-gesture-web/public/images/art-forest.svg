@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <defs>
+    <linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bde3ff"/>
+      <stop offset="1" stop-color="#fdf0e0"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" fill="url(#sky2)"/>
+  <rect y="300" width="640" height="180" fill="#2e7031"/>
+  <circle cx="110" cy="120" r="40" fill="#ffdf70"/>
+  <polygon points="60,300 130,170 200,300" fill="#1e5b26"/>
+  <polygon points="150,300 235,140 320,300" fill="#26802e"/>
+  <polygon points="270,300 350,190 430,300" fill="#1f6a28"/>
+  <polygon points="390,300 480,160 570,300" fill="#2c8a35"/>
+  <polygon points="520,300 590,210 640,300" fill="#1e5b26"/>
+  <path d="M210 300 L225 260 L240 300 Z" fill="#3d2b1f"/>
+  <path d="M445 300 L462 245 L479 300 Z" fill="#3d2b1f"/>
+  <text x="320" y="455" font-family="sans-serif" font-size="22" fill="#0d2b10" text-anchor="middle" opacity="0.85">Forest</text>
+</svg>

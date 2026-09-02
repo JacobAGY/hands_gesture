@@ -1,0 +1,58 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 20px;
+  gap: 30px;
+}
+
+.app-header {
+  text-align: center;
+}
+
+.app-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0 0 8px;
+}
+
+.title-icon {
+  font-size: 36px;
+}
+
+.title-sub {
+  font-size: 15px;
+  font-weight: 400;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.app-desc {
+  color: #94a3b8;
+  font-size: 15px;
+  margin: 0;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.app-footer {
+  text-align: center;
+  color: #475569;
+  font-size: 13px;
+}
+
+.app-footer p {
+  margin: 0;
+}

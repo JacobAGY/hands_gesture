@@ -1,0 +1,19 @@
+0 verbose cli /Users/aogengyuan/.nvm/versions/node/v22.8.0/bin/node /Users/aogengyuan/.nvm/versions/node/v22.8.0/bin/npm
+1 info using npm@10.8.2
+2 info using node@v22.8.0
+3 silly config load:file:/Users/aogengyuan/.nvm/versions/node/v22.8.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web/.npmrc
+5 silly config load:file:/Users/aogengyuan/.npmrc
+6 silly config load:file:/Users/aogengyuan/.nvm/versions/node/v22.8.0/etc/npmrc
+7 verbose title npm run build
+8 verbose argv "run" "build"
+9 verbose logfile logs-max:10 dir:/Users/aogengyuan/PycharmProjects/hands_gesture/.npm-cache/_logs/2026-09-02T12_37_24_851Z-
+10 verbose logfile /Users/aogengyuan/PycharmProjects/hands_gesture/.npm-cache/_logs/2026-09-02T12_37_24_851Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 verbose cwd /Users/aogengyuan/PycharmProjects/hands_gesture/hands-gesture-web
+14 verbose os Darwin 23.6.0
+15 verbose node v22.8.0
+16 verbose npm  v10.8.2
+17 verbose exit 0
+18 info ok
