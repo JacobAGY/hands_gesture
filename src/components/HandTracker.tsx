@@ -8,14 +8,16 @@ import {
 import './HandTracker.css';
 
 // Random artwork pool shown inside the viewfinder frame
-const ART_FILES = [
-  '/images/art-aurora.svg',
-  '/images/art-sunset.svg',
-  '/images/art-ocean.svg',
-  '/images/art-forest.svg',
-  '/images/art-space.svg',
-  '/images/art-rainbow.svg',
+const ART_NAMES = [
+  'art-aurora',
+  'art-sunset',
+  'art-ocean',
+  'art-forest',
+  'art-space',
+  'art-rainbow',
 ];
+// BASE_URL 在 GitHub Pages 部署时为 "/hands_gesture/"，本地开发为 "/"
+const ART_FILES = ART_NAMES.map((name) => `${import.meta.env.BASE_URL}images/${name}.svg`);
 
 const COLORS = ['#00FF88', '#FF6B6B'];
 
@@ -63,7 +65,7 @@ export default function HandTracker() {
   const initHandLandmarker = useCallback(async () => {
     try {
       setStatusMsg('Loading vision model...');
-      const wasmBase = new URL('/wasm', window.location.origin).toString();
+      const wasmBase = new URL(`${import.meta.env.BASE_URL}wasm`, window.location.origin).toString();
       const vision = await FilesetResolver.forVisionTasks(wasmBase);
 
       setStatusMsg('Initializing hand tracking...');
@@ -71,7 +73,7 @@ export default function HandTracker() {
         try {
           return await HandLandmarker.createFromOptions(vision, {
             baseOptions: {
-              modelAssetPath: '/models/hand_landmarker.task',
+              modelAssetPath: `${import.meta.env.BASE_URL}models/hand_landmarker.task`,
               delegate,
             },
             runningMode: 'VIDEO',
