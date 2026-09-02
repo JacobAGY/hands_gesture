@@ -21,6 +21,89 @@ const ART_FILES = ART_NAMES.map((name) => `${import.meta.env.BASE_URL}images/${n
 
 const COLORS = ['#00FF88', '#FF6B6B'];
 
+// ---- Model / WASM 多源加载 ----
+// github.io 在国内访问不稳定，20MB 的 wasm+模型常被卡住。
+// 生产环境优先走 CDN（jsDelivr / unpkg 均带 CORS），本地文件兜底；开发环境反之。
+const TASKS_WASM_VERSION = '1.0.1';
+const MODEL_GH_CDN = `https://cdn.jsdelivr.net/gh/JacobAGY/hands_gesture@main/public/models/hand_landmarker.task`;
+const LOCAL_BASE = import.meta.env.BASE_URL;
+
+interface ModelSource {
+  name: string;
+  wasmDir: string;
+  modelPath: string;
+}
+
+const CDN_SOURCES: ModelSource[] = [
+  {
+    name: 'jsDelivr CDN',
+    wasmDir: `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${TASKS_WASM_VERSION}/wasm`,
+    modelPath: MODEL_GH_CDN,
+  },
+  {
+    name: 'unpkg CDN',
+    wasmDir: `https://unpkg.com/@mediapipe/tasks-vision@${TASKS_WASM_VERSION}/wasm`,
+    modelPath: MODEL_GH_CDN,
+  },
+  {
+    name: 'this site',
+    wasmDir: `${LOCAL_BASE}wasm`,
+    modelPath: `${LOCAL_BASE}models/hand_landmarker.task`,
+  },
+];
+
+// 开发环境优先用本地（快且不依赖外网）；生产环境优先 CDN
+const MODEL_SOURCES: ModelSource[] = import.meta.env.DEV
+  ? [...CDN_SOURCES].reverse()
+  : CDN_SOURCES;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
+async function createLandmarkerFromSource(source: ModelSource): Promise<HandLandmarker | null> {
+  let vision: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
+  try {
+    vision = await withTimeout(FilesetResolver.forVisionTasks(source.wasmDir), 25000);
+  } catch (err) {
+    console.warn(`[model] ${source.name}: failed to load WASM engine`, err);
+    return null;
+  }
+  for (const delegate of ['GPU', 'CPU'] as const) {
+    try {
+      const landmarker = await withTimeout(
+        HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: source.modelPath,
+            delegate,
+          },
+          runningMode: 'VIDEO',
+          numHands: 2,
+          minHandDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        }),
+        30000
+      );
+      return landmarker;
+    } catch (err) {
+      console.warn(`[model] ${source.name}/${delegate}: failed`, err);
+    }
+  }
+  return null;
+}
+
 interface Anchor {
   x: number;
   y: number;
@@ -63,40 +146,21 @@ export default function HandTracker() {
   }, []);
 
   const initHandLandmarker = useCallback(async () => {
-    try {
-      setStatusMsg('Loading vision model...');
-      const wasmBase = new URL(`${import.meta.env.BASE_URL}wasm`, window.location.origin).toString();
-      const vision = await FilesetResolver.forVisionTasks(wasmBase);
-
-      setStatusMsg('Initializing hand tracking...');
-      const create = async (delegate: 'GPU' | 'CPU') => {
-        try {
-          return await HandLandmarker.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath: `${import.meta.env.BASE_URL}models/hand_landmarker.task`,
-              delegate,
-            },
-            runningMode: 'VIDEO',
-            numHands: 2,
-            minHandDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-          });
-        } catch (err) {
-          console.warn('HandLandmarker init failed with delegate:', delegate, err);
-          return null;
-        }
-      };
-
-      const landmarker = (await create('GPU')) ?? (await create('CPU'));
-      if (!landmarker) throw new Error('Hand tracker failed to initialize (GPU & CPU)');
-      handLandmarkerRef.current = landmarker;
-      return true;
-    } catch (err) {
-      console.error('Failed to load HandLandmarker:', err);
-      setStatusMsg('Model load failed: ' + (err as Error).message);
-      setStatus('error');
-      return false;
+    for (const source of MODEL_SOURCES) {
+      setStatusMsg(`Loading AI engine from ${source.name}...`);
+      const landmarker = await createLandmarkerFromSource(source);
+      if (landmarker) {
+        handLandmarkerRef.current = landmarker;
+        console.info(`[model] initialized via ${source.name}`);
+        return true;
+      }
     }
+    console.error('[model] all sources failed');
+    setStatusMsg(
+      'Model load failed: all sources unreachable. Check your network, then retry.'
+    );
+    setStatus('error');
+    return false;
   }, []);
 
   const startWebcam = useCallback(async () => {
