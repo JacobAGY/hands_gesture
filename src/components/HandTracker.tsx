@@ -57,6 +57,45 @@ const MODEL_SOURCES: ModelSource[] = import.meta.env.DEV
   ? [...CDN_SOURCES].reverse()
   : CDN_SOURCES;
 
+// 👍 手势触发跳转的外部视频地址（MOCK：先用公开示例视频，之后替换成真实地址即可）
+const VIDEO_TRIGGER_URL = 'https://www.w3schools.com/html/mov_bbb.mp4';
+
+function shuffleArray<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+// 洗牌牌堆换图：从打乱后的序号里按游标取下一张，保证连抽不重复。
+// 一轮走完（或首次）重新洗牌；若新牌堆首张与当前图相同则挪到末尾，跨牌堆也不会重复。
+function pickNextArtIndex(
+  poolLength: number,
+  currentIndex: number,
+  order: { current: number[] | null },
+  cursor: { current: number }
+): number {
+  if (poolLength <= 1) return 0;
+  if (!order.current || cursor.current + 1 >= order.current.length) {
+    order.current = Array.from({ length: poolLength }, (_, i) => i);
+    shuffleArray(order.current);
+    if (order.current[0] === currentIndex && order.current.length > 1) {
+      order.current.push(order.current.shift()!);
+    }
+    cursor.current = -1;
+  }
+  cursor.current += 1;
+  return order.current[cursor.current];
+}
+
+function openExternalVideo(): void {
+  // 优先新标签页全屏播放；若被浏览器弹窗拦截则直接在当前页跳转
+  const win = window.open(VIDEO_TRIGGER_URL, '_blank');
+  if (!win) {
+    window.location.assign(VIDEO_TRIGGER_URL);
+  }
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = window.setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms);
@@ -127,10 +166,16 @@ export default function HandTracker() {
   const artImagesRef = useRef<HTMLImageElement[]>([]);
   const curArtRef = useRef<HTMLImageElement | null>(null);
   const curArtIndexRef = useRef<number>(-1);
-  // 换图状态机：双手食指+拇指同时收缩并保持一段时间后，再次张开才换新图
-  const closedSinceRef = useRef<number | null>(null);
+  // 不重复选图：洗牌后的播放顺序 + 游标，一轮 6 张走完才会重新洗牌
+  const artOrderRef = useRef<number[] | null>(null);
+  const artCursorRef = useRef(-1);
+  // 换图状态机：取景框中断一段时间后，再次张开才换新图
   const noFrameSinceRef = useRef<number | null>(null);
   const armedRef = useRef(true);
+  // 👍 视频手势状态机：姿势保持 ~800ms 触发一次
+  const videoPoseSinceRef = useRef<number | null>(null);
+  const videoFiredRef = useRef(false);
+  const videoLastOpenedRef = useRef(0);
 
   const [status, setStatus] = useState<'starting' | 'ready' | 'error'>('starting');
   const [statusMsg, setStatusMsg] = useState('Loading vision model...');
@@ -244,52 +289,47 @@ export default function HandTracker() {
 
         const frame = buildFrameFromHands(result, canvas.width, canvas.height);
 
-        // 换图规则：
-        //  A) 双手都在场但取景框消失（四指收缩并拢）→ 保持 ~300ms 即"预备换图"
-        //  B) 双手放下/离场超过 ~1.2s → 也视为"预备换图"
-        // 满足任一路径后，下一次张开成框就随机换一张（不会与当前重复）。
-        const frameBroken = result.landmarks.length >= 2 && !frame;
+        // 👍 视频手势：任一手指向镜头伸出拇指（其余手指收拢）并保持 ~800ms
+        const thumbsUpNow = result.landmarks.some((lm) => thumbsUpPose(lm));
+        if (thumbsUpNow) {
+          const vt = performance.now();
+          if (videoPoseSinceRef.current === null) {
+            videoPoseSinceRef.current = vt;
+          }
+          if (
+            !videoFiredRef.current &&
+            vt - videoPoseSinceRef.current > 800 &&
+            vt - videoLastOpenedRef.current > 2500
+          ) {
+            videoFiredRef.current = true;
+            videoLastOpenedRef.current = vt;
+            openExternalVideo();
+          }
+        } else {
+          videoPoseSinceRef.current = null;
+          videoFiredRef.current = false;
+        }
+
+        // 换图规则：只要取景框中断超过 ~250ms（收拢手指/放下手都可以），
+        // 下一次张开成框就换图 —— 洗牌顺序保证连续两次不重复。
         const t = performance.now();
         if (frame) {
           if (armedRef.current || !curArtRef.current) {
-            const pool = artImagesRef.current;
-            if (pool.length > 0) {
-              let nextIndex = curArtIndexRef.current;
-              if (pool.length === 1) {
-                nextIndex = 0;
-              } else {
-                for (let i = 0; i < 8; i++) {
-                  const candidate = Math.floor(Math.random() * pool.length);
-                  if (candidate !== curArtIndexRef.current) {
-                    nextIndex = candidate;
-                    break;
-                  }
-                }
-                if (nextIndex === curArtIndexRef.current) {
-                  nextIndex = (curArtIndexRef.current + 1) % pool.length;
-                }
-              }
-              curArtIndexRef.current = nextIndex;
-              curArtRef.current = pool[nextIndex] ?? null;
-            }
+            curArtIndexRef.current = pickNextArtIndex(
+              artImagesRef.current.length,
+              curArtIndexRef.current,
+              artOrderRef,
+              artCursorRef
+            );
+            curArtRef.current = artImagesRef.current[curArtIndexRef.current] ?? null;
             armedRef.current = false;
           }
-          closedSinceRef.current = null;
           noFrameSinceRef.current = null;
         } else {
           if (noFrameSinceRef.current === null) {
             noFrameSinceRef.current = t;
-          }
-          if (frameBroken) {
-            if (closedSinceRef.current === null) {
-              closedSinceRef.current = t;
-            } else if (t - closedSinceRef.current > 300) {
-              armedRef.current = true;
-            }
-          } else if (t - noFrameSinceRef.current > 1200) {
+          } else if (t - noFrameSinceRef.current > 250) {
             armedRef.current = true;
-          } else {
-            closedSinceRef.current = null;
           }
         }
 
@@ -307,13 +347,17 @@ export default function HandTracker() {
         setHint(
           frame
             ? 'Viewfinder ready!'
-            : result.landmarks.length === 0
-              ? 'Show both palms to the camera 🙌'
-              : result.landmarks.length === 1
-                ? 'One hand detected — show the other one ✋'
-                : armedRef.current
-                  ? 'Armed! Spread thumbs & index again to load a new image'
-                  : 'Fold fingers to arm, then spread to switch the image'
+            : thumbsUpNow
+              ? videoFiredRef.current
+                ? '👍 Opening video...'
+                : '👍 Hold to open the video'
+              : result.landmarks.length === 0
+                ? 'Show both palms to the camera 🙌'
+                : result.landmarks.length === 1
+                  ? 'One hand detected — show the other one ✋'
+                  : armedRef.current
+                    ? 'Armed! Spread thumbs & index again to load a new image'
+                    : 'Fold fingers to arm, then spread to switch the image'
         );
       }
       animFrameRef.current = requestAnimationFrame(detectLoop);
@@ -334,6 +378,15 @@ export default function HandTracker() {
   const indexExtended = (lm: NormalizedLandmark[]) => dist(lm[8], lm[5]) > dist(lm[7], lm[5]) * 1.05;
   // Thumb spread open when the tip stays far from the pinky knuckle
   const thumbExtended = (lm: NormalizedLandmark[]) => dist(lm[4], lm[17]) > dist(lm[2], lm[17]) * 1.05;
+
+  // Thumb-up pose: thumb extended upward while the other fingers stay bent inward.
+  // Uses only relative finger-tip distances so it works in any hand rotation.
+  const thumbsUpPose = (lm: NormalizedLandmark[]) =>
+    dist(lm[4], lm[17]) > dist(lm[2], lm[17]) * 1.08 &&
+    dist(lm[8], lm[5]) < dist(lm[7], lm[5]) * 0.98 &&
+    dist(lm[12], lm[9]) < dist(lm[11], lm[9]) * 0.98 &&
+    dist(lm[16], lm[13]) < dist(lm[15], lm[13]) * 0.98 &&
+    dist(lm[20], lm[17]) < dist(lm[19], lm[17]) * 0.98;
 
   // Build the viewfinder quad from the four fingertips; null when the pose is incomplete
   function buildFrameFromHands(
@@ -375,19 +428,18 @@ export default function HandTracker() {
     frame: Anchor[] | null,
     w: number,
     h: number,
-    now: number
+    _now: number
   ) {
     ctx.clearRect(0, 0, w, h);
     if (!frame) return;
-    drawFrame(ctx, frame, w, h, now);
+    drawFrame(ctx, frame, w, h);
   }
 
   function drawFrame(
     ctx: CanvasRenderingContext2D,
     frame: Anchor[],
     w: number,
-    h: number,
-    now: number
+    h: number
   ) {
     const [lt, rt, rb, lb] = frame;
 
@@ -403,20 +455,20 @@ export default function HandTracker() {
     quad.lineTo(lb.x * w, lb.y * h);
     quad.closePath();
 
-    // 1) Dim everything outside the frame
-    ctx.beginPath();
-    ctx.rect(0, 0, w, h);
-    ctx.moveTo(lb.x * w, lb.y * h);
-    ctx.lineTo(rb.x * w, rb.y * h);
-    ctx.lineTo(rt.x * w, rt.y * h);
-    ctx.lineTo(lt.x * w, lt.y * h);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.fill('evenodd');
-
-    // 2) 图片铺满取景框（cover）：按取景框等比放大填满，超出的边缘裁掉，
-    //    图片大小随取景框同步变化——框大图大、框小图小。
+    // Natural "held plate" look (like the reference clip): the artwork sits on a
+    // shadowed quad with a crisp thin edge — no neon glow, no HUD brackets.
     const art = curArtRef.current;
+
+    // Drop shadow pass first so the plate visually floats above the video.
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 22;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 8;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    ctx.fill(quad);
+    ctx.restore();
+
     if (art && art.naturalWidth > 0) {
       const iw = art.naturalWidth;
       const ih = art.naturalHeight;
@@ -433,74 +485,15 @@ export default function HandTracker() {
       ctx.restore();
     }
 
-    // 3) Glowing edges + rule-of-thirds grid + corner brackets + focus reticle
-    ctx.strokeStyle = '#00FF88';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#00FF88';
-    ctx.shadowBlur = 14;
-    ctx.stroke(quad);
-    ctx.shadowBlur = 0;
-
-    ctx.save();
-    ctx.clip(quad);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    for (let t = 1; t <= 2; t++) {
-      const gx = minX + ((maxX - minX) * t) / 3;
-      const gy = minY + ((maxY - minY) * t) / 3;
-      ctx.moveTo(gx, minY);
-      ctx.lineTo(gx, maxY);
-      ctx.moveTo(minX, gy);
-      ctx.lineTo(maxX, gy);
-    }
-    ctx.stroke();
-    ctx.restore();
-
-    const topLen = Math.hypot((lt.x - rt.x) * w, (lt.y - rt.y) * h);
-    const corner = Math.min(22, Math.max(10, topLen * 0.12));
-    for (const [pt, dx, dy] of [
-      [lt, 1, 1],
-      [rt, -1, 1],
-      [rb, -1, -1],
-      [lb, 1, -1],
-    ] as const) {
-      const px = pt.x * w;
-      const py = pt.y * h;
-      ctx.strokeStyle = pt.color;
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.moveTo(px + dx * corner, py);
-      ctx.lineTo(px, py);
-      ctx.lineTo(px, py + dy * corner);
-      ctx.stroke();
-    }
-
-    const cx = (lt.x + rt.x + rb.x + lb.x) * 0.25 * w;
-    const cy = (lt.y + rt.y + rb.y + lb.y) * 0.25 * h;
-    const pulse = 0.5 + 0.5 * Math.sin(now / 400);
-    const radius = 12 + pulse * 8;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(0, 255, 136, ${0.5 + pulse * 0.5})`;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 255, 136, 0.9)';
-    ctx.fill();
+    ctx.stroke(quad);
   }
 
   return (
     <div className="hand-tracker">
       <div className={`viewport-container ${framing ? 'framing' : handCount > 0 ? 'has-hands' : ''}`}>
         <video ref={videoRef} className="webcam-video" autoPlay playsInline muted />
-
-        <div className="vf-corner vf-tl" />
-        <div className="vf-corner vf-tr" />
-        <div className="vf-corner vf-bl" />
-        <div className="vf-corner vf-br" />
 
         <canvas ref={canvasRef} className="overlay-canvas" />
 
