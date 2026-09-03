@@ -9,7 +9,8 @@ export default defineConfig({
   // 必须加 base；本地开发(GITHUB_ACTIONS 为空)保持 "/" 不变
   base: process.env.GITHUB_ACTIONS === 'true' ? '/hands_gesture/' : '/',
   server: {
-    port: 5175,
+    port: 5176,
     strictPort: true,
+    watch: { usePolling: true, interval: 300 },
   },
 })

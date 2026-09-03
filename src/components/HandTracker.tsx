@@ -126,7 +126,11 @@ export default function HandTracker() {
 
   const artImagesRef = useRef<HTMLImageElement[]>([]);
   const curArtRef = useRef<HTMLImageElement | null>(null);
-  const wasFramingRef = useRef(false);
+  const curArtIndexRef = useRef<number>(-1);
+  // 换图状态机：双手食指+拇指同时收缩并保持一段时间后，再次张开才换新图
+  const closedSinceRef = useRef<number | null>(null);
+  const noFrameSinceRef = useRef<number | null>(null);
+  const armedRef = useRef(true);
 
   const [status, setStatus] = useState<'starting' | 'ready' | 'error'>('starting');
   const [statusMsg, setStatusMsg] = useState('Loading vision model...');
@@ -240,12 +244,54 @@ export default function HandTracker() {
 
         const frame = buildFrameFromHands(result, canvas.width, canvas.height);
 
-        // Pick a new random artwork each time a new framing session starts
-        if (frame && !wasFramingRef.current) {
-          const pool = artImagesRef.current;
-          curArtRef.current = pool[Math.floor(Math.random() * pool.length)] ?? null;
+        // 换图规则：
+        //  A) 双手都在场但取景框消失（四指收缩并拢）→ 保持 ~300ms 即"预备换图"
+        //  B) 双手放下/离场超过 ~1.2s → 也视为"预备换图"
+        // 满足任一路径后，下一次张开成框就随机换一张（不会与当前重复）。
+        const frameBroken = result.landmarks.length >= 2 && !frame;
+        const t = performance.now();
+        if (frame) {
+          if (armedRef.current || !curArtRef.current) {
+            const pool = artImagesRef.current;
+            if (pool.length > 0) {
+              let nextIndex = curArtIndexRef.current;
+              if (pool.length === 1) {
+                nextIndex = 0;
+              } else {
+                for (let i = 0; i < 8; i++) {
+                  const candidate = Math.floor(Math.random() * pool.length);
+                  if (candidate !== curArtIndexRef.current) {
+                    nextIndex = candidate;
+                    break;
+                  }
+                }
+                if (nextIndex === curArtIndexRef.current) {
+                  nextIndex = (curArtIndexRef.current + 1) % pool.length;
+                }
+              }
+              curArtIndexRef.current = nextIndex;
+              curArtRef.current = pool[nextIndex] ?? null;
+            }
+            armedRef.current = false;
+          }
+          closedSinceRef.current = null;
+          noFrameSinceRef.current = null;
+        } else {
+          if (noFrameSinceRef.current === null) {
+            noFrameSinceRef.current = t;
+          }
+          if (frameBroken) {
+            if (closedSinceRef.current === null) {
+              closedSinceRef.current = t;
+            } else if (t - closedSinceRef.current > 300) {
+              armedRef.current = true;
+            }
+          } else if (t - noFrameSinceRef.current > 1200) {
+            armedRef.current = true;
+          } else {
+            closedSinceRef.current = null;
+          }
         }
-        wasFramingRef.current = !!frame;
 
         drawResults(ctx, frame, canvas.width, canvas.height, now);
 
@@ -265,7 +311,9 @@ export default function HandTracker() {
               ? 'Show both palms to the camera 🙌'
               : result.landmarks.length === 1
                 ? 'One hand detected — show the other one ✋'
-                : 'Spread both hands: extend thumbs & index fingers to frame'
+                : armedRef.current
+                  ? 'Armed! Spread thumbs & index again to load a new image'
+                  : 'Fold fingers to arm, then spread to switch the image'
         );
       }
       animFrameRef.current = requestAnimationFrame(detectLoop);
@@ -366,16 +414,19 @@ export default function HandTracker() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.fill('evenodd');
 
-    // 2) Random artwork inside the frame (cover-fit, clipped)
+    // 2) 图片铺满取景框（cover）：按取景框等比放大填满，超出的边缘裁掉，
+    //    图片大小随取景框同步变化——框大图大、框小图小。
     const art = curArtRef.current;
     if (art && art.naturalWidth > 0) {
       const iw = art.naturalWidth;
       const ih = art.naturalHeight;
-      const scale = Math.max((maxX - minX) / iw, (maxY - minY) / ih);
+      const fw = maxX - minX;
+      const fh = maxY - minY;
+      const scale = Math.max(fw / iw, fh / ih);
       const dw = iw * scale;
       const dh = ih * scale;
-      const dx = (minX + maxX) / 2 - dw / 2;
-      const dy = (minY + maxY) / 2 - dh / 2;
+      const dx = minX + (fw - dw) / 2;
+      const dy = minY + (fh - dh) / 2;
       ctx.save();
       ctx.clip(quad);
       ctx.drawImage(art, dx, dy, dw, dh);
