@@ -57,7 +57,7 @@ const MODEL_SOURCES: ModelSource[] = import.meta.env.DEV
   ? [...CDN_SOURCES].reverse()
   : CDN_SOURCES;
 
-// 👍 手势触发跳转的外部视频地址（MOCK：先用公开示例视频，之后替换成真实地址即可）
+// 👍 手势触发的视频地址（MOCK：先用公开示例视频，之后替换成真实地址即可）
 const VIDEO_TRIGGER_URL = 'https://www.w3schools.com/html/mov_bbb.mp4';
 
 function shuffleArray<T>(arr: T[]): void {
@@ -86,14 +86,6 @@ function pickNextArtIndex(
   }
   cursor.current += 1;
   return order.current[cursor.current];
-}
-
-function openExternalVideo(): void {
-  // 优先新标签页全屏播放；若被浏览器弹窗拦截则直接在当前页跳转
-  const win = window.open(VIDEO_TRIGGER_URL, '_blank');
-  if (!win) {
-    window.location.assign(VIDEO_TRIGGER_URL);
-  }
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -185,6 +177,8 @@ export default function HandTracker() {
   const [framing, setFraming] = useState(false);
   const [hint, setHint] = useState('Starting…');
   const [hands, setHands] = useState<HandData[]>([]);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const overlayVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     artImagesRef.current = ART_FILES.map((src) => {
@@ -303,7 +297,7 @@ export default function HandTracker() {
           ) {
             videoFiredRef.current = true;
             videoLastOpenedRef.current = vt;
-            openExternalVideo();
+            setVideoOpen(true);
           }
         } else {
           videoPoseSinceRef.current = null;
@@ -368,6 +362,34 @@ export default function HandTracker() {
       cancelAnimationFrame(animFrameRef.current);
     };
   }, [status]);
+
+  // 自动播放：手势触发属于"无用户激活"，带声播放可能被浏览器拦截，
+  // 拦截时退回静音自动播放，点一下画面即可开启声音/进入全屏。
+  useEffect(() => {
+    if (!videoOpen) return;
+    const v = overlayVideoRef.current;
+    if (!v) return;
+    const tryPlay = async () => {
+      try {
+        v.muted = false;
+        await v.play();
+      } catch {
+        v.muted = true;
+        try {
+          await v.play();
+        } catch {
+          // 完全无法自动播放时保留画面，用户点击后播放
+        }
+      }
+    };
+    void tryPlay();
+    return () => {
+      v.pause();
+      if (document.fullscreenElement) {
+        void document.exitFullscreen().catch(() => {});
+      }
+    };
+  }, [videoOpen]);
 
   // ---- Four-finger gesture detection & viewfinder construction ----
 
@@ -544,6 +566,38 @@ export default function HandTracker() {
               <span className="hand-score">Confidence: {(hand.score * 100).toFixed(1)}%</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {videoOpen && (
+        <div className="video-overlay" onClick={() => setVideoOpen(false)}>
+          <video
+            ref={overlayVideoRef}
+            className="video-overlay-player"
+            src={VIDEO_TRIGGER_URL}
+            playsInline
+            loop
+            onClick={(e) => {
+              e.stopPropagation();
+              const v = overlayVideoRef.current;
+              if (!v) return;
+              if (document.fullscreenElement) {
+                void document.exitFullscreen().catch(() => {});
+              } else {
+                void v.requestFullscreen?.().catch(() => {});
+              }
+            }}
+          />
+          <button
+            className="video-overlay-close"
+            aria-label="Close video"
+            onClick={(e) => {
+              e.stopPropagation();
+              setVideoOpen(false);
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
