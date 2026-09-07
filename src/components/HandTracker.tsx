@@ -67,21 +67,24 @@ function shuffleArray<T>(arr: T[]): void {
   }
 }
 
-// 洗牌牌堆换图：从打乱后的序号里按游标取下一张，保证连抽不重复。
-// 一轮走完（或首次）重新洗牌；若新牌堆首张与当前图相同则挪到末尾，跨牌堆也不会重复。
+// 换图牌堆：只在"尚未展示过"的图里按洗牌顺序取下一张，展示过的图绝不复选。
+// 展示过的序号（shown）只增不减；全部展示完后返回 -1，由调用方进入"展示完毕"状态。
 function pickNextArtIndex(
   poolLength: number,
-  currentIndex: number,
+  shown: number[],
   order: { current: number[] | null },
   cursor: { current: number }
 ): number {
-  if (poolLength <= 1) return 0;
+  const shownSet = new Set(shown);
+  const remaining: number[] = [];
+  for (let i = 0; i < poolLength; i++) {
+    if (!shownSet.has(i)) remaining.push(i);
+  }
+  if (remaining.length === 0) return -1;
+  // 牌堆走完（或首次）时，用剩余未展示的图重新洗牌
   if (!order.current || cursor.current + 1 >= order.current.length) {
-    order.current = Array.from({ length: poolLength }, (_, i) => i);
-    shuffleArray(order.current);
-    if (order.current[0] === currentIndex && order.current.length > 1) {
-      order.current.push(order.current.shift()!);
-    }
+    shuffleArray(remaining);
+    order.current = remaining;
     cursor.current = -1;
   }
   cursor.current += 1;
@@ -157,10 +160,15 @@ export default function HandTracker() {
 
   const artImagesRef = useRef<HTMLImageElement[]>([]);
   const curArtRef = useRef<HTMLImageElement | null>(null);
-  const curArtIndexRef = useRef<number>(-1);
-  // 不重复选图：洗牌后的播放顺序 + 游标，一轮 6 张走完才会重新洗牌
+  // 不重复选图：只从未展示的图里按洗牌顺序取，展示过的图进入顶部展示条后不再复选
   const artOrderRef = useRef<number[] | null>(null);
   const artCursorRef = useRef(-1);
+  // 顶部展示条：已展示的图（状态供渲染，ref 供检测循环读取）
+  const [shownArts, setShownArts] = useState<number[]>([]);
+  const shownArtsRef = useRef<number[]>([]);
+  // 全部展示完后的"图片展示完毕"状态
+  const [poolDone, setPoolDone] = useState(false);
+  const poolDoneRef = useRef(false);
   // 换图状态机：取景框中断一段时间后，再次张开才换新图
   const noFrameSinceRef = useRef<number | null>(null);
   const armedRef = useRef(true);
@@ -305,17 +313,26 @@ export default function HandTracker() {
         }
 
         // 换图规则：只要取景框中断超过 ~250ms（收拢手指/放下手都可以），
-        // 下一次张开成框就换图 —— 洗牌顺序保证连续两次不重复。
+        // 下一次张开成框就换图 —— 只从"没展示过"的图里选，选中的同时进入顶部展示条。
         const t = performance.now();
         if (frame) {
-          if (armedRef.current || !curArtRef.current) {
-            curArtIndexRef.current = pickNextArtIndex(
+          if ((armedRef.current || !curArtRef.current) && !poolDoneRef.current) {
+            const nextIdx = pickNextArtIndex(
               artImagesRef.current.length,
-              curArtIndexRef.current,
+              shownArtsRef.current,
               artOrderRef,
               artCursorRef
             );
-            curArtRef.current = artImagesRef.current[curArtIndexRef.current] ?? null;
+            if (nextIdx >= 0) {
+              curArtRef.current = artImagesRef.current[nextIdx] ?? null;
+              shownArtsRef.current = [...shownArtsRef.current, nextIdx];
+              setShownArts(shownArtsRef.current);
+            } else {
+              // 候选池清空：全部图片都已展示，取景框不再装载新图
+              curArtRef.current = null;
+              poolDoneRef.current = true;
+              setPoolDone(true);
+            }
             armedRef.current = false;
           }
           noFrameSinceRef.current = null;
@@ -339,19 +356,21 @@ export default function HandTracker() {
         );
         setFraming(!!frame);
         setHint(
-          frame
-            ? 'Viewfinder ready!'
-            : thumbsUpNow
-              ? videoFiredRef.current
-                ? '👍 Opening video...'
-                : '👍 Hold to open the video'
-              : result.landmarks.length === 0
-                ? 'Show both palms to the camera 🙌'
-                : result.landmarks.length === 1
-                  ? 'One hand detected — show the other one ✋'
-                  : armedRef.current
-                    ? 'Armed! Spread thumbs & index again to load a new image'
-                    : 'Fold fingers to arm, then spread to switch the image'
+          thumbsUpNow
+            ? videoFiredRef.current
+              ? '👍 Opening video...'
+              : '👍 Hold to open the video'
+            : poolDoneRef.current
+              ? '图片展示完毕 🎉'
+              : frame
+                ? 'Viewfinder ready!'
+                : result.landmarks.length === 0
+                  ? 'Show both palms to the camera 🙌'
+                  : result.landmarks.length === 1
+                    ? 'One hand detected — show the other one ✋'
+                    : armedRef.current
+                      ? 'Armed! Spread thumbs & index again to load a new image'
+                      : 'Fold fingers to arm, then spread to switch the image'
         );
       }
       animFrameRef.current = requestAnimationFrame(detectLoop);
@@ -514,6 +533,30 @@ export default function HandTracker() {
 
   return (
     <div className="hand-tracker">
+      {/* 取景框上方的已选图片展示条：图片一旦入选就固定在此，不再被重复选中 */}
+      <div
+        className={`selected-strip ${poolDone ? 'strip-done' : ''}`}
+        role="status"
+        aria-live="polite"
+      >
+        <span className="strip-label">
+          {poolDone ? '图片展示完毕 🎉' : `已选图片 ${shownArts.length}/${ART_NAMES.length}`}
+        </span>
+        <div className="strip-slots">
+          {ART_NAMES.map((_, slot) => {
+            // 第 slot 格展示"第 slot 个被选中"的图（按选中顺序从第一格排起）
+            const artIdx = shownArts[slot];
+            return (
+              <div key={slot} className={`strip-slot ${artIdx !== undefined ? 'filled' : ''}`}>
+                {artIdx !== undefined && (
+                  <img src={ART_FILES[artIdx]} alt={ART_NAMES[artIdx]} className="strip-thumb" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className={`viewport-container ${framing ? 'framing' : handCount > 0 ? 'has-hands' : ''}`}>
         <video ref={videoRef} className="webcam-video" autoPlay playsInline muted />
 
