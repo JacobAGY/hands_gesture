@@ -97,12 +97,14 @@ const AVATAR_COLORS = [
 // 三阶段流转：1 双手展开抽图 → 2 ✊握拳抽红包 → 3 👍视频
 type Phase = 'images' | 'redpacket' | 'final';
 
-// ---- 翻页手势（阶段一/二通用）：左手向右快速挥动 → 跳到下一阶段 ----
+// ---- 翻页手势（阶段一/二通用）：左手张开手掌向右快速挥动 → 跳到下一阶段 ----
 // 坐标说明：检测用原始相机坐标，预览做了镜像，所以 x 减小 = 画面上向右
 const SWIPE_HAND = 'Left'; // MediaPipe 标注的左手
 const SWIPE_WINDOW_MS = 400; // 位移统计窗口
-const SWIPE_DIST = 0.18; // 窗口内最小水平位移（归一化坐标）
-const SWIPE_COOLDOWN_MS = 1200; // 两次翻页最小间隔
+const SWIPE_DIST = 0.28; // 窗口内最小水平位移（归一化坐标），须快速大幅挥动
+const SWIPE_COOLDOWN_MS = 1500; // 两次翻页最小间隔
+
+const FIST_HAND = 'Right'; // 抽红包用手：MediaPipe 标注的右手
 
 function shuffleArray<T>(arr: T[]): void {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -325,16 +327,16 @@ export default function HandTracker() {
     }
     if (ph === 'redpacket') {
       if (fistNow) {
-        return fistFiredRef.current ? '✊ Got one! Release and fist again' : '✊ Keep the fist to draw…';
+        return fistFiredRef.current ? '✊ Got one! Release and fist again' : '✊ Keep the right fist to draw…';
       }
-      return `✊ Fist 0.8s to draw (${drawnRef.current.length}/${MOCK_RED_PACKETS.length}) · swipe right to skip`;
+      return `✊ Right-hand fist 0.8s to draw (${drawnRef.current.length}/${MOCK_RED_PACKETS.length}) · open-palm swipe right to skip`;
     }
     if (poolDoneRef.current) return 'All images shown — entering red packet round…';
     if (framing) return 'Viewfinder ready!';
     if (handCount === 0) return 'Show both palms to the camera 🙌';
     if (handCount === 1) return 'One hand detected — show the other one ✋';
     return armedRef.current
-      ? 'Armed! Spread thumbs & index again · swipe right to skip'
+      ? 'Armed! Spread thumbs & index again · open-palm swipe right to skip'
       : 'Fold fingers to arm, then spread to switch the image';
   };
 
@@ -437,17 +439,27 @@ export default function HandTracker() {
         const ph = phaseRef.current;
         const frame = ph === 'images' ? buildFrameFromHands(result, canvas.width, canvas.height) : null;
         const thumbsUpNow = ph === 'final' && result.landmarks.some((lm) => thumbsUpPose(lm));
-        const fistNow = ph === 'redpacket' && result.landmarks.some((lm) => fistPose(lm));
+        // ✊ 抽红包只认右手：左手握拳不触发
+        const fistNow =
+          ph === 'redpacket' &&
+          result.landmarks.some(
+            (lm, i) => result.handedness[i]?.[0]?.categoryName === FIST_HAND && fistPose(lm)
+          );
 
-        // ---- 翻页手势：左手向右挥动 → 跳到下一阶段（阶段间通用）----
-        const leftHand = result.landmarks.find(
-          (_, i) => result.handedness[i]?.[0]?.categoryName === SWIPE_HAND
+        // ---- 翻页手势：画面中只能有左手（右手出现即禁用），张开手掌向右快速挥动 ----
+        // 阶段一中只要取景框还成形就完全禁用，杜绝摆框时的误触发
+        const leftIdx = result.handedness.findIndex(
+          (h) => h[0]?.categoryName === SWIPE_HAND
         );
-        if (ph !== 'final' && leftHand) {
+        const onlyLeftHand = leftIdx >= 0 && result.landmarks.length === 1;
+        const swipeBlocked =
+          ph === 'final' || (ph === 'images' && frame !== null) || !onlyLeftHand;
+        if (!swipeBlocked && leftIdx >= 0) {
+          const leftHand = result.landmarks[leftIdx];
           const palmX = leftHand[9].x;
           const palmY = leftHand[9].y;
-          // 展开手（非握拳）才有效，避免与阶段二抽红包动作混淆
-          const openHand = !fistPose(leftHand);
+          // 必须四指全部伸直的张开手掌：取景框手势（三指弯曲）被排除
+          const openHand = openPalmPose(leftHand);
           const trail = swipeTrailRef.current;
           // 手离开画面再进入时轨迹断裂，直接重开，避免跨帧"瞬移"被误判为挥动
           if (trail.length > 0 && now - trail[trail.length - 1].t > 200) trail.length = 0;
@@ -455,10 +467,12 @@ export default function HandTracker() {
           while (trail.length > 0 && now - trail[0].t > SWIPE_WINDOW_MS) trail.shift();
 
           const sinceLast = now - lastSwipeAtRef.current;
+          const openCount = trail.reduce((n, p) => n + (p.open ? 1 : 0), 0);
           if (
             sinceLast > SWIPE_COOLDOWN_MS &&
             trail.length >= 2 &&
-            trail.every((p) => p.open) &&
+            openCount >= trail.length * 0.7 && // 允许个别帧抖动，但主体须为张开手掌
+            trail[trail.length - 1].open &&
             trail[0].x - trail[trail.length - 1].x > SWIPE_DIST
           ) {
             lastSwipeAtRef.current = now;
@@ -639,6 +653,15 @@ export default function HandTracker() {
     const thumbIn = dist(lm[4], lm[6]) < palm * 0.6;
     return curled && thumbIn;
   };
+
+  // 🖐 Open-palm pose (page-flip gesture): all four fingers clearly extended.
+  // 与取景框手势（只伸拇指+食指、其余三指弯曲）天然互斥，
+  // 避免阶段一摆取景框时的大幅移动被误判成翻页。
+  const fingerExtended = (lm: NormalizedLandmark[], tip: number) =>
+    dist(lm[tip], lm[tip - 2]) > dist(lm[tip - 1], lm[tip - 2]) * 1.25;
+
+  const openPalmPose = (lm: NormalizedLandmark[]) =>
+    fingerExtended(lm, 8) && fingerExtended(lm, 12) && fingerExtended(lm, 16) && fingerExtended(lm, 20);
 
   // Build the viewfinder quad from the four fingertips; null when the pose is incomplete
   function buildFrameFromHands(
