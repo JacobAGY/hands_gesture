@@ -299,7 +299,7 @@ export default function HandTracker() {
     }, REVEAL_MS);
   }, []);
 
-  // 翻页手势：跳到下一阶段（第三阶段为最后一站，不再前进）
+  // 翻页手势：暂时停用（保留代码以便将来恢复），目前改用阶段条点击跳转
   const advancePhase = useCallback(() => {
     window.clearTimeout(phaseTimerRef.current);
     phaseTimerRef.current = 0;
@@ -310,6 +310,24 @@ export default function HandTracker() {
       setPhase('final');
     }
   }, [enterRedPacketPhase]);
+
+  // 点击阶段条直接跳转到对应阶段（images 内部不重置，保留当前进度）
+  const jumpToPhase = useCallback(
+    (target: Phase) => {
+      window.clearTimeout(phaseTimerRef.current);
+      phaseTimerRef.current = 0;
+      if (target === 'images' && phaseRef.current !== 'images') {
+        phaseRef.current = 'images';
+        setPhase('images');
+      } else if (target === 'redpacket' && phaseRef.current !== 'redpacket') {
+        enterRedPacketPhase();
+      } else if (target === 'final' && phaseRef.current !== 'final') {
+        phaseRef.current = 'final';
+        setPhase('final');
+      }
+    },
+    [enterRedPacketPhase]
+  );
 
   // 按阶段生成取景框底部提示（只读 ref，闭包过期也安全）
   const hintForPhase = (
@@ -329,14 +347,14 @@ export default function HandTracker() {
       if (fistNow) {
         return fistFiredRef.current ? '✊ Got one! Release and fist again' : '✊ Keep the right fist to draw…';
       }
-      return `✊ Right-hand fist 0.8s to draw (${drawnRef.current.length}/${MOCK_RED_PACKETS.length}) · open-palm swipe right to skip`;
+      return `✊ Right-hand fist 0.8s to draw (${drawnRef.current.length}/${MOCK_RED_PACKETS.length}) · click the stage bar to skip`;
     }
     if (poolDoneRef.current) return 'All images shown — entering red packet round…';
     if (framing) return 'Viewfinder ready!';
     if (handCount === 0) return 'Show both palms to the camera 🙌';
     if (handCount === 1) return 'One hand detected — show the other one ✋';
     return armedRef.current
-      ? 'Armed! Spread thumbs & index again · open-palm swipe right to skip'
+      ? 'Armed! Spread thumbs & index again · click the stage bar to skip'
       : 'Fold fingers to arm, then spread to switch the image';
   };
 
@@ -446,15 +464,13 @@ export default function HandTracker() {
             (lm, i) => result.handedness[i]?.[0]?.categoryName === FIST_HAND && fistPose(lm)
           );
 
-        // ---- 翻页手势：画面中只能有左手（右手出现即禁用），张开手掌向右快速挥动 ----
-        // 阶段一中只要取景框还成形就完全禁用，杜绝摆框时的误触发
+        // ---- 翻页手势：暂时停用（改由顶部阶段条点击跳转），整块逻辑短路保留 ----
         const leftIdx = result.handedness.findIndex(
           (h) => h[0]?.categoryName === SWIPE_HAND
         );
         const onlyLeftHand = leftIdx >= 0 && result.landmarks.length === 1;
-        const swipeBlocked =
-          ph === 'final' || (ph === 'images' && frame !== null) || !onlyLeftHand;
-        if (!swipeBlocked && leftIdx >= 0) {
+        const swipeBlocked = true;
+        if (!swipeBlocked && onlyLeftHand && leftIdx >= 0) {
           const leftHand = result.landmarks[leftIdx];
           const palmX = leftHand[9].x;
           const palmY = leftHand[9].y;
@@ -767,21 +783,48 @@ export default function HandTracker() {
 
   return (
     <div className="hand-tracker">
-      {/* 顶部三阶段进度条：当前阶段高亮，已完成打勾 */}
+      {/* 顶部三阶段进度条：点击可直接跳转到对应阶段 */}
       <div className="phase-bar" role="tablist" aria-label="Activity stages">
-        <div className={`phase-chip ${phase === 'images' ? 'current' : 'done'}`}>
+        <div
+          role="tab"
+          aria-selected={phase === 'images'}
+          tabIndex={0}
+          onClick={() => jumpToPhase('images')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') jumpToPhase('images');
+          }}
+          className={`phase-chip clickable ${phase === 'images' ? 'current' : 'done'}`}
+        >
           <span className="phase-icon">{phase !== 'images' ? '✓' : '🖼️'}</span>
           <span className="phase-name">1. Image Draw</span>
         </div>
         <span className="phase-arrow">→</span>
         <div
-          className={`phase-chip ${phase === 'redpacket' ? 'current' : phase === 'final' ? 'done' : ''}`}
+          role="tab"
+          aria-selected={phase === 'redpacket'}
+          tabIndex={0}
+          onClick={() => jumpToPhase('redpacket')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') jumpToPhase('redpacket');
+          }}
+          className={`phase-chip clickable ${
+            phase === 'redpacket' ? 'current' : phase === 'final' ? 'done' : ''
+          }`}
         >
           <span className="phase-icon">{phase === 'final' ? '✓' : '🧧'}</span>
           <span className="phase-name">2. Red Packet</span>
         </div>
         <span className="phase-arrow">→</span>
-        <div className={`phase-chip ${phase === 'final' ? 'current' : ''}`}>
+        <div
+          role="tab"
+          aria-selected={phase === 'final'}
+          tabIndex={0}
+          onClick={() => jumpToPhase('final')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') jumpToPhase('final');
+          }}
+          className={`phase-chip clickable ${phase === 'final' ? 'current' : ''}`}
+        >
           <span className="phase-icon">👍</span>
           <span className="phase-name">3. Video</span>
         </div>
@@ -969,3 +1012,5 @@ export default function HandTracker() {
     </div>
   );
 }
+}
+
