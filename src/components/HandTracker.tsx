@@ -1012,5 +1012,4 @@ export default function HandTracker() {
     </div>
   );
 }
-}
 
