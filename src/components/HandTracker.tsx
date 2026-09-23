@@ -6,18 +6,19 @@ import {
   type HandLandmarkerResult,
 } from '@mediapipe/tasks-vision';
 import './HandTracker.css';
+import { SUBMISSIONS } from '../data/submissions';
 
-// Random artwork pool shown inside the viewfinder frame
-const ART_NAMES = [
-  'art-aurora',
-  'art-sunset',
-  'art-ocean',
-  'art-forest',
-  'art-space',
-  'art-rainbow',
-];
-// BASE_URL 在 GitHub Pages 部署时为 "/hands_gesture/"，本地开发为 "/"
-const ART_FILES = ART_NAMES.map((name) => `${import.meta.env.BASE_URL}images/${name}.svg`);
+// 第一部分活动照片：Excel 全部 15 件投稿，每次打开页面随机选出 8 件展示。
+// 真实照片位于 public/images/submissions/<作品序号>.jpg。
+const POOL_SIZE = 8;
+const ART_FILES = SUBMISSIONS.map((s) => s.image);
+const ART_NAMES = SUBMISSIONS.map((s) => `#${s.id} ${s.title} — ${s.author}`);
+
+function pickRandomPool(): number[] {
+  const idx = SUBMISSIONS.map((_, i) => i);
+  shuffleArray(idx);
+  return idx.slice(0, POOL_SIZE);
+}
 
 const COLORS = ['#00FF88', '#FF6B6B'];
 
@@ -57,27 +58,61 @@ const MODEL_SOURCES: ModelSource[] = import.meta.env.DEV
   ? [...CDN_SOURCES].reverse()
   : CDN_SOURCES;
 
-// 👍 手势触发的视频地址（MOCK：先用公开示例视频，之后替换成真实地址即可）
-const VIDEO_TRIGGER_URL = 'https://www.w3schools.com/html/mov_bbb.mp4';
+// 两阶段流转：1 双手展开抽图 → 2 ✊握拳抽红包（均由顶部阶段条点击切换，不自动跳转）
+type Phase = 'images' | 'redpacket';
 
-// ---- 阶段二：红包名单（MOCK 数据，后续替换为 Excel 名单 + 头像图片） ----
+// ---- 阶段二：红包名单（41 人，每轮抽出 5 人） ----
 interface RedPacket {
   id: number;
   name: string;
   avatar?: string; // 预留：正式头像图片地址
 }
 
-const MOCK_RED_PACKETS: RedPacket[] = [
-  '张伟',
-  '王芳',
-  '李娜',
-  '刘洋',
-  '陈静',
-  '杨帆',
-  '赵磊',
-  '黄敏',
-  '周杰',
-  '吴婷',
+// 每轮抽出的人数
+const RED_PACKET_DRAW_COUNT = 5;
+
+const RED_PACKET_PEOPLE: RedPacket[] = [
+  'Nicole Q Y WU',
+  'Maple Ye LI',
+  'Yuna J W ZHENG',
+  'May M SU',
+  'Kohl K ZHENG_SP',
+  'Wen Tao DENG',
+  'Stephen Q WANG',
+  'Daniel J C SHANG',
+  'Miller Q L DING',
+  'Zechao PENG',
+  'Beth CHEN',
+  'Ping Zhang LAN',
+  'Chenny Jun CHEN',
+  'Elijah R WU',
+  'Jeanette Z JIAN',
+  'Ares H J ZHANG',
+  'Zu Shun TAN',
+  'Jackson Z C HAO',
+  'Wing1 Y ZENG',
+  'Leon T E LAN',
+  'Raymond W W YUAN',
+  'Gary Y ZHANG',
+  'Faye F LIAO',
+  'Murphy C WANG',
+  'Kenji ZHANG',
+  'Nickolas G J YU',
+  'Rene W R Q ZHANG',
+  'Alex Y C YU',
+  'Lucia X Y LU',
+  'Holy G Y AO',
+  'Richard R H ZHAO',
+  'Tracy T LI',
+  'Cara K Q HUANG',
+  'Ivy F Zhang',
+  'Leo J F LIAO',
+  'Eric C F LI',
+  'Wason Y H WANG',
+  'Effy Y F WANG',
+  'Sherry1 X L LI',
+  'Raymond P REN',
+  'Vincent Y MA',
 ].map((name, i) => ({ id: i, name }));
 
 // 头像占位底色：正式头像接入后可移除
@@ -93,9 +128,6 @@ const AVATAR_COLORS = [
   '#FEE440',
   '#C77DFF',
 ];
-
-// 三阶段流转：1 双手展开抽图 → 2 ✊握拳抽红包 → 3 👍视频
-type Phase = 'images' | 'redpacket' | 'final';
 
 // ---- 翻页手势（阶段一/二通用）：左手张开手掌向右快速挥动 → 跳到下一阶段 ----
 // 坐标说明：检测用原始相机坐标，预览做了镜像，所以 x 减小 = 画面上向右
@@ -206,9 +238,14 @@ export default function HandTracker() {
 
   const artImagesRef = useRef<HTMLImageElement[]>([]);
   const curArtRef = useRef<HTMLImageElement | null>(null);
+  // 本轮随机选出的 8 张（从 15 件投稿中抽取），展示条只渲染这 8 格
+  const [artPool] = useState<number[]>(() => pickRandomPool());
   // 不重复选图：只从未展示的图里按洗牌顺序取，展示过的图进入顶部展示条后不再复选
   const artOrderRef = useRef<number[] | null>(null);
   const artCursorRef = useRef(-1);
+  if (artOrderRef.current === null) {
+    artOrderRef.current = [...artPool];
+  }
   // 顶部展示条：已展示的图（状态供渲染，ref 供检测循环读取）
   const [shownArts, setShownArts] = useState<number[]>([]);
   const shownArtsRef = useRef<number[]>([]);
@@ -218,11 +255,6 @@ export default function HandTracker() {
   // 换图状态机：取景框中断一段时间后，再次张开才换新图
   const noFrameSinceRef = useRef<number | null>(null);
   const armedRef = useRef(true);
-  // 👍 视频手势状态机：姿势保持 ~800ms 触发一次
-  const videoPoseSinceRef = useRef<number | null>(null);
-  const videoFiredRef = useRef(false);
-  const videoLastOpenedRef = useRef(0);
-
   const [status, setStatus] = useState<'starting' | 'ready' | 'error'>('starting');
   const [statusMsg, setStatusMsg] = useState('Loading vision model...');
   const [cameraOk, setCameraOk] = useState(false);
@@ -231,13 +263,10 @@ export default function HandTracker() {
   const [framing, setFraming] = useState(false);
   const [hint, setHint] = useState('Starting…');
   const [hands, setHands] = useState<HandData[]>([]);
-  const [videoOpen, setVideoOpen] = useState(false);
-  const overlayVideoRef = useRef<HTMLVideoElement>(null);
 
-  // 三阶段状态机：images → redpacket → final（👍 视频），手势只在所属阶段生效
+  // 两阶段状态机：images → redpacket，手势只在所属阶段生效；阶段切换只靠点击阶段条
   const [phase, setPhase] = useState<Phase>('images');
   const phaseRef = useRef<Phase>('images');
-  const phaseTimerRef = useRef(0);
   // ✊ 红包手势状态机：单手握拳保持 ~800ms 抽一个，两次抽取间隔 >1.2s
   const fistSinceRef = useRef<number | null>(null);
   const fistFiredRef = useRef(false);
@@ -246,6 +275,7 @@ export default function HandTracker() {
   const drawnRef = useRef<RedPacket[]>([]);
   const [drawnPackets, setDrawnPackets] = useState<RedPacket[]>([]);
   const [giftsSent, setGiftsSent] = useState(false);
+  const giftsSentRef = useRef(false);
   // 中央揭示动画：抽中的红包先在画面中心展示 ~2.2s，期间锁定下一次抽取
   const REVEAL_MS = 2200;
   const [revealPacket, setRevealPacket] = useState<RedPacket | null>(null);
@@ -263,12 +293,14 @@ export default function HandTracker() {
     });
   }, []);
 
-  // 进入第二阶段：洗牌红包抽取顺序（抽中顺序随机，但展示按抽取顺序从第一格排起）
+  // 进入第二阶段：41 人洗牌，每轮抽出 5 人（抽中顺序随机，展示按抽取顺序从第一格排起）
   const enterRedPacketPhase = useCallback(() => {
-    drawQueueRef.current = [...MOCK_RED_PACKETS];
+    drawQueueRef.current = [...RED_PACKET_PEOPLE];
     shuffleArray(drawQueueRef.current);
     drawnRef.current = [];
     setDrawnPackets([]);
+    giftsSentRef.current = false;
+    setGiftsSent(false);
     revealRef.current = null;
     setRevealPacket(null);
     fistSinceRef.current = null;
@@ -278,8 +310,10 @@ export default function HandTracker() {
   }, []);
 
   // 抽一个红包：从洗牌队列取出一位 → 先在画面中央揭示，落位后从队列移除。
-  // 队列 pop 即永久移除，抽中的人绝不会再被抽到；全部抽完 → 发出 10 份礼物。
+  // 队列 pop 即永久移除，抽中的人绝不会再被抽到；抽满 5 个 → 全部礼物发出（停留本阶段）。
   const drawRedPacket = useCallback(() => {
+    // 本轮 5 个名额已满：不再抽取
+    if (drawnRef.current.length >= RED_PACKET_DRAW_COUNT) return;
     const next = drawQueueRef.current.pop();
     if (!next) return;
     revealRef.current = { packet: next, until: performance.now() + REVEAL_MS };
@@ -291,39 +325,28 @@ export default function HandTracker() {
       setRevealPacket(null);
       drawnRef.current = [...drawnRef.current, next];
       setDrawnPackets(drawnRef.current);
-      if (drawnRef.current.length >= MOCK_RED_PACKETS.length) {
+      if (drawnRef.current.length >= RED_PACKET_DRAW_COUNT) {
+        giftsSentRef.current = true;
         setGiftsSent(true);
-        phaseRef.current = 'final';
-        setPhase('final');
       }
     }, REVEAL_MS);
   }, []);
 
   // 翻页手势：暂时停用（保留代码以便将来恢复），目前改用阶段条点击跳转
   const advancePhase = useCallback(() => {
-    window.clearTimeout(phaseTimerRef.current);
-    phaseTimerRef.current = 0;
     if (phaseRef.current === 'images') {
       enterRedPacketPhase();
-    } else if (phaseRef.current === 'redpacket') {
-      phaseRef.current = 'final';
-      setPhase('final');
     }
   }, [enterRedPacketPhase]);
 
   // 点击阶段条直接跳转到对应阶段（images 内部不重置，保留当前进度）
   const jumpToPhase = useCallback(
     (target: Phase) => {
-      window.clearTimeout(phaseTimerRef.current);
-      phaseTimerRef.current = 0;
       if (target === 'images' && phaseRef.current !== 'images') {
         phaseRef.current = 'images';
         setPhase('images');
       } else if (target === 'redpacket' && phaseRef.current !== 'redpacket') {
         enterRedPacketPhase();
-      } else if (target === 'final' && phaseRef.current !== 'final') {
-        phaseRef.current = 'final';
-        setPhase('final');
       }
     },
     [enterRedPacketPhase]
@@ -334,27 +357,27 @@ export default function HandTracker() {
     ph: Phase,
     framing: boolean,
     handCount: number,
-    thumbsUpNow: boolean,
     fistNow: boolean
   ): string => {
-    if (thumbsUpNow) {
-      return videoFiredRef.current ? '👍 Opening video...' : '👍 Hold to open the video';
-    }
-    if (ph === 'final') {
-      return '🎉 Gifts sent! 👍 Thumbs-up to play the video';
-    }
     if (ph === 'redpacket') {
+      if (giftsSentRef.current) return '🎁 All gifts sent! Click 1. Image Draw to replay';
       if (fistNow) {
         return fistFiredRef.current ? '✊ Got one! Release and fist again' : '✊ Keep the right fist to draw…';
       }
-      return `✊ Right-hand fist 0.8s to draw (${drawnRef.current.length}/${MOCK_RED_PACKETS.length}) · click the stage bar to skip`;
+      return `✊ Right-hand fist 0.8s to draw (${drawnRef.current.length}/${RED_PACKET_DRAW_COUNT}) · click the stage bar to switch`;
     }
-    if (poolDoneRef.current) return 'All images shown — entering red packet round…';
+    if (poolDoneRef.current) return 'All images shown 🎉 Click 2. Red Packet to continue';
+    // 取景框里出现图片时，下方同步显示该作品的名字
+    if (curArtRef.current) {
+      const artIdx = artImagesRef.current.indexOf(curArtRef.current);
+      const sub = artIdx >= 0 ? SUBMISSIONS[artIdx] : undefined;
+      if (sub) return `🖼️ ${sub.title} — ${sub.author}`;
+    }
     if (framing) return 'Viewfinder ready!';
     if (handCount === 0) return 'Show both palms to the camera 🙌';
     if (handCount === 1) return 'One hand detected — show the other one ✋';
     return armedRef.current
-      ? 'Armed! Spread thumbs & index again · click the stage bar to skip'
+      ? 'Armed! Spread thumbs & index again · click the stage bar to switch'
       : 'Fold fingers to arm, then spread to switch the image';
   };
 
@@ -410,7 +433,6 @@ export default function HandTracker() {
       cancelled = true;
       cancelAnimationFrame(animFrameRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
-      window.clearTimeout(phaseTimerRef.current);
       window.clearTimeout(revealCommitTimerRef.current);
     };
   }, [startWebcam, initHandLandmarker]);
@@ -456,7 +478,6 @@ export default function HandTracker() {
         // ---- 阶段门控：每套手势只在所属阶段解析，互不干扰 ----
         const ph = phaseRef.current;
         const frame = ph === 'images' ? buildFrameFromHands(result, canvas.width, canvas.height) : null;
-        const thumbsUpNow = ph === 'final' && result.landmarks.some((lm) => thumbsUpPose(lm));
         // ✊ 抽红包只认右手：左手握拳不触发
         const fistNow =
           ph === 'redpacket' &&
@@ -500,28 +521,6 @@ export default function HandTracker() {
           swipeTrailRef.current = [];
         }
 
-        // ---- 阶段三：👍 保持 ~800ms 打开视频 ----
-        if (ph === 'final') {
-          if (thumbsUpNow) {
-            const vt = now;
-            if (videoPoseSinceRef.current === null) {
-              videoPoseSinceRef.current = vt;
-            }
-            if (
-              !videoFiredRef.current &&
-              vt - videoPoseSinceRef.current > 800 &&
-              vt - videoLastOpenedRef.current > 2500
-            ) {
-              videoFiredRef.current = true;
-              videoLastOpenedRef.current = vt;
-              setVideoOpen(true);
-            }
-          } else {
-            videoPoseSinceRef.current = null;
-            videoFiredRef.current = false;
-          }
-        }
-
         // ---- 阶段二：✊ 握拳保持 ~800ms 抽一个红包 ----
         if (ph === 'redpacket') {
           // 中央揭示动画期间锁定：不检测手势、不触发新抽取
@@ -554,24 +553,25 @@ export default function HandTracker() {
         if (ph === 'images') {
           if (frame) {
             if ((armedRef.current || !curArtRef.current) && !poolDoneRef.current) {
-              const nextIdx = pickNextArtIndex(
-                artImagesRef.current.length,
-                shownArtsRef.current,
-                artOrderRef,
-                artCursorRef
-              );
+              // 本轮只展示随机选出的 8 张：8 张出完即结束，不再从剩余投稿里补
+              const nextIdx =
+                shownArtsRef.current.length >= artPool.length
+                  ? -1
+                  : pickNextArtIndex(
+                      artImagesRef.current.length,
+                      shownArtsRef.current,
+                      artOrderRef,
+                      artCursorRef
+                    );
               if (nextIdx >= 0) {
                 curArtRef.current = artImagesRef.current[nextIdx] ?? null;
                 shownArtsRef.current = [...shownArtsRef.current, nextIdx];
                 setShownArts(shownArtsRef.current);
               } else {
-                // 候选池清空：全部图片都已展示
+                // 候选池清空：8 张图片都已展示，停留本阶段等待点击切换（不自动跳转）
                 curArtRef.current = null;
                 poolDoneRef.current = true;
                 setPoolDone(true);
-                // 抽图完毕：1.2s 后自动跳入第二阶段（红包）
-                window.clearTimeout(phaseTimerRef.current);
-                phaseTimerRef.current = window.setTimeout(enterRedPacketPhase, 1200);
               }
               armedRef.current = false;
             }
@@ -598,7 +598,7 @@ export default function HandTracker() {
           }))
         );
         setFraming(!!frame);
-        setHint(hintForPhase(ph, !!frame, result.landmarks.length, thumbsUpNow, fistNow));
+        setHint(hintForPhase(ph, !!frame, result.landmarks.length, fistNow));
       }
       animFrameRef.current = requestAnimationFrame(detectLoop);
     };
@@ -606,37 +606,8 @@ export default function HandTracker() {
     return () => {
       window.clearInterval(sizeTimer);
       cancelAnimationFrame(animFrameRef.current);
-      window.clearTimeout(phaseTimerRef.current);
     };
   }, [status]);
-
-  // 自动播放：手势触发属于"无用户激活"，带声播放可能被浏览器拦截，
-  // 拦截时退回静音自动播放，点一下画面即可开启声音/进入全屏。
-  useEffect(() => {
-    if (!videoOpen) return;
-    const v = overlayVideoRef.current;
-    if (!v) return;
-    const tryPlay = async () => {
-      try {
-        v.muted = false;
-        await v.play();
-      } catch {
-        v.muted = true;
-        try {
-          await v.play();
-        } catch {
-          // 完全无法自动播放时保留画面，用户点击后播放
-        }
-      }
-    };
-    void tryPlay();
-    return () => {
-      v.pause();
-      if (document.fullscreenElement) {
-        void document.exitFullscreen().catch(() => {});
-      }
-    };
-  }, [videoOpen]);
 
   // ---- Four-finger gesture detection & viewfinder construction ----
 
@@ -648,17 +619,7 @@ export default function HandTracker() {
   // Thumb spread open when the tip stays far from the pinky knuckle
   const thumbExtended = (lm: NormalizedLandmark[]) => dist(lm[4], lm[17]) > dist(lm[2], lm[17]) * 1.05;
 
-  // Thumb-up pose: thumb extended upward while the other fingers stay bent inward.
-  // Uses only relative finger-tip distances so it works in any hand rotation.
-  const thumbsUpPose = (lm: NormalizedLandmark[]) =>
-    dist(lm[4], lm[17]) > dist(lm[2], lm[17]) * 1.08 &&
-    dist(lm[8], lm[5]) < dist(lm[7], lm[5]) * 0.98 &&
-    dist(lm[12], lm[9]) < dist(lm[11], lm[9]) * 0.98 &&
-    dist(lm[16], lm[13]) < dist(lm[15], lm[13]) * 0.98 &&
-    dist(lm[20], lm[17]) < dist(lm[19], lm[17]) * 0.98;
-
   // ✊ Fist pose (阶段二抽红包)：四指指尖收拢贴向各自指根，拇指折起压在食指上。
-  // 拇指收拢（指尖靠近食指 PIP）与 👍 的"拇指伸出"恰好互斥，
   // 与阶段一的双手取景框也不同形，保证各阶段手势不会误触发。
   const fistPose = (lm: NormalizedLandmark[]) => {
     const palm = dist(lm[0], lm[9]);
@@ -783,7 +744,7 @@ export default function HandTracker() {
 
   return (
     <div className="hand-tracker">
-      {/* 顶部三阶段进度条：点击可直接跳转到对应阶段 */}
+      {/* 顶部两阶段导航：点击切换阶段，不自动跳转 */}
       <div className="phase-bar" role="tablist" aria-label="Activity stages">
         <div
           role="tab"
@@ -807,26 +768,10 @@ export default function HandTracker() {
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') jumpToPhase('redpacket');
           }}
-          className={`phase-chip clickable ${
-            phase === 'redpacket' ? 'current' : phase === 'final' ? 'done' : ''
-          }`}
+          className={`phase-chip clickable ${phase === 'redpacket' ? 'current' : ''}`}
         >
-          <span className="phase-icon">{phase === 'final' ? '✓' : '🧧'}</span>
+          <span className="phase-icon">🧧</span>
           <span className="phase-name">2. Red Packet</span>
-        </div>
-        <span className="phase-arrow">→</span>
-        <div
-          role="tab"
-          aria-selected={phase === 'final'}
-          tabIndex={0}
-          onClick={() => jumpToPhase('final')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') jumpToPhase('final');
-          }}
-          className={`phase-chip clickable ${phase === 'final' ? 'current' : ''}`}
-        >
-          <span className="phase-icon">👍</span>
-          <span className="phase-name">3. Video</span>
         </div>
       </div>
 
@@ -838,16 +783,25 @@ export default function HandTracker() {
           aria-live="polite"
         >
           <span className="strip-label">
-            {poolDone ? 'All images shown 🎉' : `Images ${shownArts.length}/${ART_NAMES.length}`}
+            {poolDone ? 'All images shown 🎉' : `Images ${shownArts.length}/${artPool.length}`}
           </span>
           <div className="strip-slots">
-            {ART_NAMES.map((_, slot) => {
-              // 第 slot 格展示"第 slot 个被选中"的图（按选中顺序从第一格排起）
+            {artPool.map((subIdx, slot) => {
+              // 未抽中时格子留空（不剧透）；抽中后展示照片 + 作者名，按选中顺序从第一格排起
               const artIdx = shownArts[slot];
+              const drawn = artIdx !== undefined;
+              const sub = drawn ? SUBMISSIONS[artIdx] : undefined;
               return (
-                <div key={slot} className={`strip-slot ${artIdx !== undefined ? 'filled' : ''}`}>
-                  {artIdx !== undefined && (
-                    <img src={ART_FILES[artIdx]} alt={ART_NAMES[artIdx]} className="strip-thumb" />
+                <div key={SUBMISSIONS[subIdx].id} className={`strip-slot art-slot ${drawn ? 'filled' : ''}`} title={sub ? `#${sub.id} ${sub.title} — ${sub.author}` : undefined}>
+                  {sub && (
+                    <div className="art-card">
+                      <img
+                        src={ART_FILES[artIdx]}
+                        alt={ART_NAMES[artIdx]}
+                        className="strip-thumb"
+                      />
+                      <span className="art-name">{sub.title}</span>
+                    </div>
                   )}
                 </div>
               );
@@ -861,11 +815,11 @@ export default function HandTracker() {
         <div className={`redpacket-strip ${giftsSent ? 'rp-done' : ''}`}>
           <span className="strip-label">
             {giftsSent
-              ? '🎁 All 10 gifts sent!'
-              : `Red packets ${drawnPackets.length}/${MOCK_RED_PACKETS.length} · ✊ fist to draw next`}
+              ? '🎁 All 5 gifts sent!'
+              : `Red packets ${drawnPackets.length}/${RED_PACKET_DRAW_COUNT} · ✊ fist to draw next`}
           </span>
           <div className="strip-slots">
-            {MOCK_RED_PACKETS.map((_, slot) => {
+            {Array.from({ length: RED_PACKET_DRAW_COUNT }, (_, slot) => {
               const packet = drawnPackets[slot];
               return (
                 <div
@@ -975,38 +929,6 @@ export default function HandTracker() {
               <span className="hand-score">Confidence: {(hand.score * 100).toFixed(1)}%</span>
             </div>
           ))}
-        </div>
-      )}
-
-      {videoOpen && (
-        <div className="video-overlay" onClick={() => setVideoOpen(false)}>
-          <video
-            ref={overlayVideoRef}
-            className="video-overlay-player"
-            src={VIDEO_TRIGGER_URL}
-            playsInline
-            loop
-            onClick={(e) => {
-              e.stopPropagation();
-              const v = overlayVideoRef.current;
-              if (!v) return;
-              if (document.fullscreenElement) {
-                void document.exitFullscreen().catch(() => {});
-              } else {
-                void v.requestFullscreen?.().catch(() => {});
-              }
-            }}
-          />
-          <button
-            className="video-overlay-close"
-            aria-label="Close video"
-            onClick={(e) => {
-              e.stopPropagation();
-              setVideoOpen(false);
-            }}
-          >
-            ✕
-          </button>
         </div>
       )}
     </div>
